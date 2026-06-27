@@ -43,7 +43,7 @@ def bulk_get_post_stats(
 
     liked_post_ids: set[str] = set()
     if viewer_id:
-        liked_rows: list[str | None] = session.execute(
+        liked_rows: Sequence[str | None] = session.execute(
             select(Like.post_id).where(
                 and_(Like.post_id.in_(post_ids), Like.user_id == viewer_id)
             )

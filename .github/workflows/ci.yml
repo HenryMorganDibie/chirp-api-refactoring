@@ -15,40 +15,9 @@ env:
   GRPC_JWT_SECRET: "ci-test-secret-at-least-32-chars!!"
 
 jobs:
-  install:
-    name: Install dependencies
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: moonrepo/setup-toolchain@v0
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: pnpm install --no-frozen-lockfile
-      - name: Install Python dependencies
-        working-directory: apps/api
-        run: |
-          pip install uv --quiet
-          uv sync
-      - uses: actions/cache@v4
-        with:
-          path: .moon/cache
-          key: moon-${{ runner.os }}-${{ hashFiles('**/moon.yml', '.moon/**') }}
-          restore-keys: moon-${{ runner.os }}-
-
   lint:
     name: Lint
     runs-on: ubuntu-latest
-    needs: install
     steps:
       - uses: actions/checkout@v4
         with:
@@ -70,18 +39,12 @@ jobs:
         run: |
           pip install uv --quiet
           uv sync
-      - name: Lint affected packages
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            moon run :lint --affected --remote ${{ github.event.pull_request.base.sha }}
-          else
-            moon run :lint
-          fi
+      - name: Lint
+        run: moon run :lint
 
   typecheck:
     name: Type check
     runs-on: ubuntu-latest
-    needs: install
     steps:
       - uses: actions/checkout@v4
         with:
@@ -103,18 +66,12 @@ jobs:
         run: |
           pip install uv --quiet
           uv sync
-      - name: Type check affected packages
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            moon run :typecheck --affected --remote ${{ github.event.pull_request.base.sha }}
-          else
-            moon run :typecheck
-          fi
+      - name: Type check
+        run: moon run :typecheck
 
   test:
     name: Unit tests
     runs-on: ubuntu-latest
-    needs: install
     steps:
       - uses: actions/checkout@v4
         with:
@@ -136,15 +93,10 @@ jobs:
         run: |
           pip install uv --quiet
           uv sync
-      - name: Run tests for affected packages
+      - name: Run tests
         env:
           GRPC_JWT_SECRET: "ci-test-secret-at-least-32-chars!!"
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            moon run :test --affected --remote ${{ github.event.pull_request.base.sha }}
-          else
-            moon run :test
-          fi
+        run: moon run :test
 
   build:
     name: Build
@@ -163,10 +115,5 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --no-frozen-lockfile
-      - name: Build affected packages
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            moon run :build --affected --remote ${{ github.event.pull_request.base.sha }}
-          else
-            moon run :build
-          fi
+      - name: Build
+        run: moon run :build

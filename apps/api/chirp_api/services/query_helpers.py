@@ -1,15 +1,9 @@
-\"\"\"Reusable query helpers to prevent N+1 query patterns.
-
-ISSUE 2 — Query Performance Problem:
+"""Reusable query helpers to prevent N+1 query patterns.
 
 Before/after query counts:
   home feed (10 posts):       31 queries  ->  3 queries
-  user profile page (posts):  3N+1 queries -> 3 queries
-  bookmarks page (10 posts):  4N+1 queries -> 4 queries
-
-Reusable pattern: every service that returns a list of posts should call
-bulk_get_post_stats() instead of looping and calling _get_post_counts().
-\"\"\"
+  bookmarks page (10 posts):  41 queries  ->  4 queries
+"""
 
 from typing import Any, Sequence
 
@@ -22,10 +16,7 @@ from chirp_api.db.models import Comment, Like
 def bulk_get_post_stats(
     session: Session, post_ids: list[str], viewer_id: str | None = None
 ) -> dict[str, dict[str, Any]]:
-    \"\"\"Return like count, comment count, and viewer like status for a list of posts.
-
-    Issues exactly 2 queries regardless of how many posts are in the list.
-    \"\"\"
+    """Return like count, comment count, and viewer like status for a list of posts."""
     if not post_ids:
         return {}
 
@@ -57,7 +48,6 @@ def bulk_get_post_stats(
                 and_(Like.post_id.in_(post_ids), Like.user_id == viewer_id)
             )
         ).scalars()
-        # scalars() returns ScalarResult; convert via list() first for type safety
         liked_post_ids = set(list(liked_rows))
 
     return {
@@ -73,11 +63,7 @@ def bulk_get_post_stats(
 def attach_post_stats(
     posts_with_authors: Sequence[Any], stats: dict[str, dict[str, Any]]
 ) -> list[dict[str, Any]]:
-    \"\"\"Merge post+author rows with bulk stats into the final dict format.
-
-    posts_with_authors: sequence of (Post, User) tuples from SQLAlchemy.
-    stats: result of bulk_get_post_stats().
-    \"\"\"
+    """Merge post+author rows with bulk stats into the final dict format."""
     result = []
     for post, author in posts_with_authors:
         post_stats = stats.get(post.id, {"like_count": 0, "comment_count": 0, "is_liked": False})

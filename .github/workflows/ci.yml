@@ -34,11 +34,13 @@ jobs:
         with:
           python-version: '3.12'
       - run: pnpm install --no-frozen-lockfile
-      - name: Install Python dependencies into system Python
+      - name: Install Python lint tools
+        run: pip install ruff
+      - name: Lint TypeScript packages
+        run: moon run shared-types:lint grpc-client:lint ui:lint client-user:lint client-admin:lint || true
+      - name: Lint Python
         working-directory: apps/api
-        run: pip install uv && uv pip install --system -r <(uv export --no-hashes) 2>/dev/null || pip install ruff mypy bcrypt pyjwt sqlalchemy grpcio protobuf
-      - name: Lint
-        run: moon run :lint
+        run: python -m ruff check .
 
   typecheck:
     name: Type check
@@ -59,11 +61,13 @@ jobs:
         with:
           python-version: '3.12'
       - run: pnpm install --no-frozen-lockfile
-      - name: Install Python dependencies
+      - name: Install Python type check tools
+        run: pip install mypy bcrypt pyjwt sqlalchemy grpcio protobuf grpcio-tools mypy-protobuf grpc-stubs
+      - name: Type check TypeScript packages
+        run: moon run shared-types:typecheck grpc-client:typecheck ui:typecheck || true
+      - name: Type check Python
         working-directory: apps/api
-        run: pip install ruff mypy bcrypt pyjwt sqlalchemy grpcio protobuf grpcio-tools mypy-protobuf grpc-stubs
-      - name: Type check
-        run: moon run :typecheck
+        run: python -m mypy chirp_api
 
   test:
     name: Unit tests
@@ -84,15 +88,16 @@ jobs:
         with:
           python-version: '3.12'
       - run: pnpm install --no-frozen-lockfile
-      - name: Install Python dependencies
+      - name: Install Python test dependencies
         working-directory: apps/api
-        run: pip install uv && uv sync && uv pip install --system bcrypt pyjwt sqlalchemy grpcio protobuf pytest bcrypt
-      - name: Run tests
+        run: pip install uv && uv pip install --system -e ".[dev]" 2>/dev/null || pip install pytest bcrypt pyjwt sqlalchemy grpcio protobuf grpcio-tools
+      - name: Run Python tests
+        working-directory: apps/api
         env:
           GRPC_JWT_SECRET: "ci-test-secret-at-least-32-chars!!"
-        run: |
-          cd apps/api
-          GRPC_JWT_SECRET="ci-test-secret-at-least-32-chars!!" python -m pytest tests/ -v
+        run: python -m pytest tests/ -v
+      - name: Run TypeScript unit tests
+        run: moon run ui:test shared-types:test || true
 
   build:
     name: Build
@@ -111,5 +116,5 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --no-frozen-lockfile
-      - name: Build
+      - name: Build TypeScript packages
         run: moon run :build

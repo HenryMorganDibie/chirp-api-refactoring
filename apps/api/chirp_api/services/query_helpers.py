@@ -43,12 +43,12 @@ def bulk_get_post_stats(
 
     liked_post_ids: set[str] = set()
     if viewer_id:
-        liked_rows = session.execute(
+        liked_rows: list[str | None] = session.execute(
             select(Like.post_id).where(
                 and_(Like.post_id.in_(post_ids), Like.user_id == viewer_id)
             )
-        ).scalars()
-        liked_post_ids = set(list(liked_rows))
+        ).scalars().all()
+        liked_post_ids = {pid for pid in liked_rows if pid is not None}
 
     return {
         pid: {

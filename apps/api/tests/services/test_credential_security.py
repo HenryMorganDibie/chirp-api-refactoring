@@ -84,8 +84,9 @@ class TestLegacyMigrationOnLogin:
 
 class TestNewRegistrationsUseBcrypt:
     def test_register_stores_bcrypt_hash(self, session):
-        from chirp_api.db.models import User
         from sqlalchemy import select
+
+        from chirp_api.db.models import User
 
         register_user(
             session,

@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  GRPC_JWT_SECRET: "ci-test-secret-at-least-32-chars!!"
+  GRPC_JWT_SECRET: ${{ secrets.GRPC_JWT_SECRET }}
 
 jobs:
   lint:
@@ -94,7 +94,7 @@ jobs:
       - name: Run Python tests
         working-directory: apps/api
         env:
-          GRPC_JWT_SECRET: "ci-test-secret-at-least-32-chars!!"
+          GRPC_JWT_SECRET: ${{ secrets.GRPC_JWT_SECRET }}
         run: python -m pytest tests/ -v
       - name: Run TypeScript unit tests
         run: moon run ui:test shared-types:test || true

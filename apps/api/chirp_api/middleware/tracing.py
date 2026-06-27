@@ -7,7 +7,7 @@ import time
 import uuid
 from contextlib import contextmanager
 from contextvars import ContextVar
-from typing import Generator
+from typing import Any, Generator, MutableMapping
 
 import grpc
 
@@ -28,10 +28,13 @@ if not logger.handlers:
 class TraceLoggerAdapter(logging.LoggerAdapter):
     """Injects trace_id and method into every log record."""
 
-    def process(self, msg: str, kwargs: dict) -> tuple[str, dict]:
-        extra = kwargs.get("extra", {})
+    def process(
+        self, msg: str, kwargs: MutableMapping[str, Any]
+    ) -> tuple[str, MutableMapping[str, Any]]:
+        extra = kwargs.get("extra") or {}
         extra.setdefault("trace_id", get_trace_id() or "-")
-        extra.setdefault("method", self.extra.get("method", "-"))
+        if isinstance(self.extra, dict):
+            extra.setdefault("method", self.extra.get("method", "-"))
         kwargs["extra"] = extra
         return msg, kwargs
 
@@ -44,7 +47,7 @@ def get_trace_id() -> str:
 @contextmanager
 def request_trace(
     method_name: str, user_id: str | None = None
-) -> Generator[TraceLoggerAdapter, None, None]:
+) -> Generator["TraceLoggerAdapter", None, None]:
     """Context manager that sets a UUID trace ID for a gRPC call."""
     trace_id = str(uuid.uuid4())
     token = _trace_id_var.set(trace_id)
@@ -65,7 +68,6 @@ def request_trace(
         _trace_id_var.reset(token)
 
 
-# Maps exception message patterns to gRPC status codes.
 _ERROR_MAP = [
     ({"not found", "does not exist"}, grpc.StatusCode.NOT_FOUND),
     ({"already exists", "already taken", "duplicate"}, grpc.StatusCode.ALREADY_EXISTS),

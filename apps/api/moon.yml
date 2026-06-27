@@ -6,36 +6,52 @@ dependsOn:
 
 tasks:
   dev:
-    command: '.venv/bin/python -m chirp_api.main'
+    command: 'python -m chirp_api.main'
     options:
       persistent: true
       cache: false
+
   start:
-    command: '.venv/bin/python -m chirp_api.main'
+    command: 'python -m chirp_api.main'
     options:
       persistent: true
       cache: false
+
   test:
-    command: '.venv/bin/python -m pytest tests/ -v'
+    command: 'python -m pytest tests/ -v'
     inputs:
       - 'chirp_api/**/*.py'
       - 'tests/**/*.py'
+      - 'pyproject.toml'
+    env:
+      GRPC_JWT_SECRET: 'ci-test-secret-at-least-32-chars!!'
     options:
       mergeArgs: 'replace'
+      cache: false
+
   lint:
-    command: '.venv/bin/ruff check .'
+    command: 'python -m ruff check .'
     inputs:
       - 'chirp_api/**/*.py'
       - 'tests/**/*.py'
     options:
       mergeArgs: 'replace'
+      cache: false
+
   typecheck:
-    command: '.venv/bin/mypy chirp_api'
+    command: 'python -m mypy chirp_api'
     inputs:
       - 'chirp_api/**/*.py'
     options:
       mergeArgs: 'replace'
+      cache: false
+
   db-seed:
-    command: '.venv/bin/python -m chirp_api.db.seed'
+    command: 'python -m chirp_api.db.seed'
+    options:
+      cache: false
+
   db-migrate:
-    command: '.venv/bin/python -m alembic upgrade head'
+    command: 'python -m alembic upgrade head'
+    options:
+      cache: false

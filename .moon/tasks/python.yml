@@ -8,18 +8,30 @@ fileGroups:
     - '**/*.py'
   configs:
     - 'pyproject.toml'
+    - 'uv.lock'
 
 tasks:
   lint:
-    command: 'ruff check .'
-    inputs:
-      - '@group(sources)'
-  typecheck:
-    command: 'mypy .'
+    command: 'python -m ruff check .'
     inputs:
       - '@group(sources)'
       - '@group(configs)'
-  test:
-    command: 'pytest'
+    options:
+      cache: false
+
+  typecheck:
+    command: 'python -m mypy .'
     inputs:
       - '@group(sources)'
+      - '@group(configs)'
+    options:
+      cache: false
+
+  test:
+    command: 'python -m pytest'
+    inputs:
+      - '@group(sources)'
+    env:
+      GRPC_JWT_SECRET: 'ci-test-secret-at-least-32-chars!!'
+    options:
+      cache: false

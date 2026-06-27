@@ -34,11 +34,9 @@ jobs:
         with:
           python-version: '3.12'
       - run: pnpm install --no-frozen-lockfile
-      - name: Install Python dependencies
+      - name: Install Python dependencies into system Python
         working-directory: apps/api
-        run: |
-          pip install uv --quiet
-          uv sync
+        run: pip install uv && uv pip install --system -r <(uv export --no-hashes) 2>/dev/null || pip install ruff mypy bcrypt pyjwt sqlalchemy grpcio protobuf
       - name: Lint
         run: moon run :lint
 
@@ -63,9 +61,7 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - name: Install Python dependencies
         working-directory: apps/api
-        run: |
-          pip install uv --quiet
-          uv sync
+        run: pip install ruff mypy bcrypt pyjwt sqlalchemy grpcio protobuf grpcio-tools mypy-protobuf grpc-stubs
       - name: Type check
         run: moon run :typecheck
 
@@ -90,13 +86,13 @@ jobs:
       - run: pnpm install --no-frozen-lockfile
       - name: Install Python dependencies
         working-directory: apps/api
-        run: |
-          pip install uv --quiet
-          uv sync
+        run: pip install uv && uv sync && uv pip install --system bcrypt pyjwt sqlalchemy grpcio protobuf pytest bcrypt
       - name: Run tests
         env:
           GRPC_JWT_SECRET: "ci-test-secret-at-least-32-chars!!"
-        run: moon run :test
+        run: |
+          cd apps/api
+          GRPC_JWT_SECRET="ci-test-secret-at-least-32-chars!!" python -m pytest tests/ -v
 
   build:
     name: Build

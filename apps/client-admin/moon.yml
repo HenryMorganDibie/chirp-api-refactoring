@@ -1,0 +1,34 @@
+language: 'typescript'
+layer: 'application'
+
+dependsOn:
+  - id: 'proto'
+    scope: 'production'
+  - id: 'grpc-client'
+    scope: 'production'
+  - id: 'ui'
+    scope: 'production'
+  - id: 'shared-types'
+    scope: 'production'
+
+tasks:
+  dev:
+    command: 'vite dev --port 3002'
+    options:
+      persistent: true
+      cache: false
+  build:
+    command: 'vite build'
+    inputs:
+      - 'src/**/*'
+      - 'app.config.ts'
+    outputs:
+      - '.output/**'
+    deps:
+      - '^:build'
+  test:
+    command: 'vitest run'
+    inputs:
+      - 'src/**/*'
+    deps:
+      - '^:build'

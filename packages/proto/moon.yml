@@ -1,0 +1,24 @@
+language: 'typescript'
+layer: 'library'
+
+workspace:
+  inheritedTasks:
+    exclude: ['test', 'typecheck', 'lint']
+
+tasks:
+  generate:
+    command: 'pnpm exec protoc --plugin=./node_modules/.bin/protoc-gen-ts --ts_out ./generated --proto_path ./protos ./protos/*.proto'
+    inputs:
+      - 'protos/**/*.proto'
+    outputs:
+      - 'generated/**'
+  generate-python:
+    command: 'python -m grpc_tools.protoc --proto_path=./protos --python_out=../../apps/api/chirp_api/generated --grpc_python_out=../../apps/api/chirp_api/generated ../../packages/proto/protos/*.proto'
+    inputs:
+      - 'protos/**/*.proto'
+    options:
+      cache: false
+  build:
+    command: 'pnpm run proto:generate'
+    deps:
+      - '~:generate'

@@ -1,0 +1,37 @@
+$schema: 'https://moonrepo.dev/schemas/tasks.json'
+
+inheritedBy:
+  toolchains: ['javascript', 'typescript', 'node']
+
+fileGroups:
+  sources:
+    - 'src/**/*'
+  configs:
+    - '*.config.{js,cjs,mjs,ts}'
+    - 'tsconfig.json'
+
+tasks:
+  build:
+    command: 'tsc'
+    inputs:
+      - '@group(sources)'
+      - '@group(configs)'
+    deps:
+      - '^:build'
+  lint:
+    command: 'biome check .'
+    inputs:
+      - '@group(sources)'
+  typecheck:
+    command: 'tsc --noEmit'
+    inputs:
+      - '@group(sources)'
+      - '@group(configs)'
+    deps:
+      - '^:build'
+  test:
+    command: 'vitest run --passWithNoTests'
+    inputs:
+      - '@group(sources)'
+    deps:
+      - '^:build'

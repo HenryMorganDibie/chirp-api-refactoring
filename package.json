@@ -1,0 +1,26 @@
+{
+	"name": "chirp-monorepo",
+	"version": "1.0.0",
+	"private": true,
+	"packageManager": "pnpm@9.15.0",
+	"scripts": {
+		"dev": "moon run :dev",
+		"build": "moon run :build",
+		"lint": "moon run :lint",
+		"format": "biome format --write .",
+		"typecheck": "moon run :typecheck",
+		"test": "moon run :test",
+		"test:unit": "moon run :test",
+		"test:e2e": "moon run client-user:test-e2e",
+		"proto:generate": "moon run proto:generate",
+		"db:seed": "moon run api:db-seed",
+		"clean": "rm -rf node_modules .moon/cache apps/*/{.output,.vinxi,.tanstack,dist,node_modules/.vite,node_modules/.cache,playwright-report,test-results,blob-report} packages/*/{dist,node_modules/.cache} apps/api/.venv apps/api/__pycache__"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.3.11",
+		"@playwright/test": "^1.57.0",
+		"@faker-js/faker": "^9.3.0",
+		"typescript": "^5.7.2",
+		"vitest": "^3.0.5"
+	}
+}

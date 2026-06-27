@@ -1,0 +1,25 @@
+$schema: 'https://moonrepo.dev/schemas/tasks.json'
+
+inheritedBy:
+  toolchains: ['python', 'unstable_python']
+
+fileGroups:
+  sources:
+    - '**/*.py'
+  configs:
+    - 'pyproject.toml'
+
+tasks:
+  lint:
+    command: 'ruff check .'
+    inputs:
+      - '@group(sources)'
+  typecheck:
+    command: 'mypy .'
+    inputs:
+      - '@group(sources)'
+      - '@group(configs)'
+  test:
+    command: 'pytest'
+    inputs:
+      - '@group(sources)'

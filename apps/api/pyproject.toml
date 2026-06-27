@@ -1,0 +1,48 @@
+[project]
+name = "chirp-api"
+version = "1.0.0"
+description = "Chirp social media platform - gRPC API"
+requires-python = ">=3.12"
+dependencies = [
+    "grpcio==1.80.0",
+    "grpcio-tools==1.80.0",
+    "protobuf==6.33.6",
+    "sqlalchemy==2.0.48",
+    "pyjwt==2.12.1",
+    "alembic==1.14.0",
+    "bcrypt>=5.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.0.2",
+    "mypy==1.15.0",
+    "mypy-protobuf==5.0.0",
+    "grpc-stubs==1.53.0.5",
+    "ruff==0.8.6",
+]
+
+[tool.setuptools.packages.find]
+include = ["chirp_api*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["chirp_api/generated"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+# added this because E501 (line-too-long) errors live in two file types where wrap not practical
+[tool.ruff.lint.per-file-ignores]
+"chirp_api/db/seed.py" = ["E501"]
+"alembic/versions/*" = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true

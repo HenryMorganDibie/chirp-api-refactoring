@@ -1,0 +1,172 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRPC_JWT_SECRET: "ci-test-secret-at-least-32-chars!!"
+
+jobs:
+  install:
+    name: Install dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: moonrepo/setup-moon@v2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pnpm install --frozen-lockfile
+      - name: Install Python dependencies
+        working-directory: apps/api
+        run: |
+          pip install uv --quiet
+          uv sync
+      - uses: actions/cache@v4
+        with:
+          path: .moon/cache
+          key: moon-${{ runner.os }}-${{ hashFiles('**/moon.yml', '.moon/**') }}
+          restore-keys: moon-${{ runner.os }}-
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: moonrepo/setup-moon@v2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pnpm install --frozen-lockfile
+      - name: Install Python dependencies
+        working-directory: apps/api
+        run: |
+          pip install uv --quiet
+          uv sync
+      - name: Lint affected packages
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            moon run :lint --affected --remote ${{ github.event.pull_request.base.sha }}
+          else
+            moon run :lint
+          fi
+
+  typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: moonrepo/setup-moon@v2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pnpm install --frozen-lockfile
+      - name: Install Python dependencies
+        working-directory: apps/api
+        run: |
+          pip install uv --quiet
+          uv sync
+      - name: Type check affected packages
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            moon run :typecheck --affected --remote ${{ github.event.pull_request.base.sha }}
+          else
+            moon run :typecheck
+          fi
+
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    needs: install
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: moonrepo/setup-moon@v2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pnpm install --frozen-lockfile
+      - name: Install Python dependencies
+        working-directory: apps/api
+        run: |
+          pip install uv --quiet
+          uv sync
+      - name: Run tests for affected packages
+        env:
+          GRPC_JWT_SECRET: "ci-test-secret-at-least-32-chars!!"
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            moon run :test --affected --remote ${{ github.event.pull_request.base.sha }}
+          else
+            moon run :test
+          fi
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: moonrepo/setup-moon@v2
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build affected packages
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            moon run :build --affected --remote ${{ github.event.pull_request.base.sha }}
+          else
+            moon run :build
+          fi

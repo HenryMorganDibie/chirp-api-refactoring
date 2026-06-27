@@ -129,3 +129,40 @@ GRPC_JWT_SECRET=test-secret uv run --with pytest pytest tests/ -q --tb=short
 HOOK
 chmod +x .git/hooks/pre-commit
 ```
+
+
+---
+
+## Issue 5: Build Pipeline & Developer Experience
+
+### Problems identified in monorepo build config:
+
+**1. Missing Python toolchain declaration in `toolchains.yml`**
+Python was used by `apps/api` but never declared. Moon could not manage Python version consistently.
+Fix: added `python: version: '3.12.0'` to toolchains.yml.
+
+**2. Node version mismatch**
+`toolchains.yml` declared Node 20.19.0 but task requirements specify Node 22+.
+Fix: updated to `22.16.0`.
+
+**3. `GRPC_JWT_SECRET` not set in test tasks**
+After the JWT secret fix (Issue 1), `moon run :test` would fail at import time.
+Fix: added `env: GRPC_JWT_SECRET` to both the inherited python task and api moon.yml.
+
+**4. `uv.lock` missing from Python task inputs**
+Lock file changes would not invalidate moon's cache, allowing stale venvs to silently pass CI.
+Fix: added `uv.lock` to the configs file group in `python.yml`.
+
+**5. `package.json` missing from node task inputs**
+Dependency changes wouldn't invalidate node task cache.
+Fix: added to configs file group in `node.yml`.
+
+**6. Missing `install` task for Python API**
+No cacheable install step existed, making it impossible for CI to restore the venv efficiently.
+Fix: added `uv sync` as a cacheable `install` task with `pyproject.toml` + `uv.lock` as inputs.
+
+### New files:
+
+- `.github/workflows/ci.yml`: PR pipeline — install -> lint -> typecheck -> test -> build. Uses `moon run :task --affected` on PRs. Lint, typecheck, and test run in parallel after install; build runs only after all three pass.
+- `.husky/pre-commit`: runs `moon run :lint --affected` on staged changes plus Python syntax check. ~2-5s on typical changes.
+- `package.json`: added husky devDependency and prepare script for automatic hook installation.

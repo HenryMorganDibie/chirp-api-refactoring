@@ -1,0 +1,14 @@
+#!/bin/sh
+# Pre-commit hook: lints staged changes quickly.
+# Install: cp .husky/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+set -e
+echo "Running pre-commit checks..."
+moon run :lint --affected 2>&1
+STAGED_PY=$(git diff --cached --name-only --diff-filter=ACM | grep '\.py$' || true)
+if [ -n "$STAGED_PY" ]; then
+  cd apps/api
+  GRPC_JWT_SECRET=pre-commit-dummy-secret-32chars!! \
+    .venv/bin/python -m py_compile $STAGED_PY 2>&1 && echo "Python syntax OK"
+  cd ../..
+fi
+echo "Pre-commit checks passed."
